@@ -1,0 +1,15 @@
+# Real Piper leader on can0 driving the left-arm action-source contract.
+piper_leader:
+  ros__parameters:
+    can_interface: can0
+    init_can: false
+    publish_rate_hz: 200.0
+    feedback_timeout_s: 0.1
+    mit_kd_effort_damping: 0.0
+    restore_pendant_servo_on_stop: false
+    joint_names: [left_joint1, left_joint2, left_joint3, left_joint4, left_joint5, left_joint6]
+    gripper_joint_name: left_gripper_joint1
+    joint_reference_topic: /action_sources/piper_leader_left/arm/joint_reference
+    gripper_reference_topic: /action_sources/piper_leader_left/end_effector/joint_reference
+    pendant_state_topic: /teleop/piper_leader_left/pendant_state
+    status_topic: /teleop/piper_leader_left/status
