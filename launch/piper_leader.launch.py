@@ -15,8 +15,16 @@ from launch_ros.substitutions import FindPackageShare
 
 def _nodes(context, *args, **kwargs):
     config = LaunchConfiguration("config")
-    node_name = LaunchConfiguration("node_name")
+    node_name = LaunchConfiguration("node_name").perform(context).strip()
     can_interface = LaunchConfiguration("can_interface").perform(context).strip()
+    publish_rate_hz = LaunchConfiguration("publish_rate_hz").perform(context).strip()
+    joint_names = LaunchConfiguration("joint_names").perform(context).strip()
+    gripper_joint_name = LaunchConfiguration("gripper_joint_name").perform(context).strip()
+    joint_reference_topic = LaunchConfiguration("joint_reference_topic").perform(context).strip()
+    gripper_reference_topic = LaunchConfiguration("gripper_reference_topic").perform(context).strip()
+    status_topic = LaunchConfiguration("status_topic").perform(context).strip()
+    pendant_state_topic = LaunchConfiguration("pendant_state_topic").perform(context).strip()
+
     leader_model_xacro = LaunchConfiguration("leader_model_xacro")
     leader_robot_description = Command(
         [
@@ -25,12 +33,36 @@ def _nodes(context, *args, **kwargs):
             leader_model_xacro,
         ]
     )
+    node_params = {
+        "leader_robot_description": leader_robot_description,
+    }
+    if can_interface:
+        node_params["can_interface"] = can_interface
+    if publish_rate_hz:
+        try:
+            node_params["publish_rate_hz"] = float(publish_rate_hz)
+        except ValueError:
+            pass
+    if joint_names:
+        parsed_joints = [j.strip() for j in joint_names.split(",") if j.strip()]
+        node_params["joint_names"] = parsed_joints
+        node_params["follower_joint_names"] = parsed_joints
+    if gripper_joint_name:
+        node_params["gripper_joint_name"] = gripper_joint_name
+        node_params["follower_gripper_joint_name"] = gripper_joint_name
+    if joint_reference_topic:
+        node_params["joint_reference_topic"] = joint_reference_topic
+    if gripper_reference_topic:
+        node_params["gripper_reference_topic"] = gripper_reference_topic
+    if status_topic:
+        node_params["status_topic"] = status_topic
+    if pendant_state_topic:
+        node_params["pendant_state_topic"] = pendant_state_topic
+
     params = [
         config,
-        {"leader_robot_description": leader_robot_description},
+        node_params,
     ]
-    if can_interface:
-        params.append({"can_interface": can_interface})
 
     node = Node(
         package="piper_leader_teleop",
@@ -58,6 +90,41 @@ def generate_launch_description() -> LaunchDescription:
                 "can_interface",
                 default_value="",
                 description="Optional SocketCAN interface override (e.g. can0, can1).",
+            ),
+            DeclareLaunchArgument(
+                "publish_rate_hz",
+                default_value="",
+                description="Optional publish rate in Hz (e.g. 200.0).",
+            ),
+            DeclareLaunchArgument(
+                "joint_names",
+                default_value="",
+                description="Comma-separated joint names (e.g. left_joint1,left_joint2,...).",
+            ),
+            DeclareLaunchArgument(
+                "gripper_joint_name",
+                default_value="",
+                description="Gripper joint name (e.g. left_gripper_joint1).",
+            ),
+            DeclareLaunchArgument(
+                "joint_reference_topic",
+                default_value="",
+                description="Output arm joint reference trajectory topic.",
+            ),
+            DeclareLaunchArgument(
+                "gripper_reference_topic",
+                default_value="",
+                description="Output gripper reference trajectory topic.",
+            ),
+            DeclareLaunchArgument(
+                "status_topic",
+                default_value="",
+                description="Status publisher topic.",
+            ),
+            DeclareLaunchArgument(
+                "pendant_state_topic",
+                default_value="",
+                description="Teaching pendant state topic.",
             ),
             DeclareLaunchArgument(
                 "leader_model_xacro",
