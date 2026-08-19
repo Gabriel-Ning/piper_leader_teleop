@@ -16,6 +16,59 @@ Homomorphic Piper leader source for ROS 2 Jazzy. The first version provides:
 Haptic feedback is intentionally deferred. The follower remains independently
 owned by `ros2_control`; this node only publishes leader source topics.
 
+## RMI dual-arm (piper_bimanual)
+
+This node is a workstation source. It does **not** talk to
+`controller_manager`. Under LocalEM the follower JSPC listens on
+`/execution/<side>_arm/joint_reference`, so a small RMI process must admit
+`TeleopJoint_{Left,Right}` and relay `action_sources` onto that ingress.
+
+Build on the workstation (this package is not in the RT colcon set until
+`piper_leader_teleop` is selected):
+
+```bash
+colcon build --symlink-install --packages-select piper_leader_teleop
+source install/setup.bash
+```
+
+RT follower stack must already be up. Then, in order:
+
+```bash
+# 1. Admit TeleopJoint and start the relay (keeps JSPC + gripper_fwd active)
+python examples/14_piper_leader_teleop.py --profile piper_bimanual.yaml --side both
+
+# 2. Other terminals: start leaders. Do not enable yet.
+#    Override can_interface in the yaml if the pendant is not on can0/can1.
+ros2 launch piper_leader_teleop piper_leader.launch.py \
+  config:=$(ros2 pkg prefix piper_leader_teleop)/share/piper_leader_teleop/config/piper_leader_left.yaml \
+  node_name:=piper_leader_left
+
+ros2 launch piper_leader_teleop piper_leader.launch.py \
+  config:=$(ros2 pkg prefix piper_leader_teleop)/share/piper_leader_teleop/config/piper_leader_right.yaml \
+  node_name:=piper_leader_right
+
+# 3. Gate: status JSON has active=false and no joint_reference traffic.
+ros2 topic echo /teleop/piper_leader_left/status --once
+
+# 4. Enable only after the leader is supported and CAN is live.
+ros2 service call /piper_leader_left/enable std_srvs/srv/SetBool '{data: true}'
+ros2 service call /piper_leader_right/enable std_srvs/srv/SetBool '{data: true}'
+```
+
+Stop before killing the nodes:
+
+```bash
+ros2 service call /piper_leader_left/enable std_srvs/srv/SetBool '{data: false}'
+ros2 service call /piper_leader_right/enable std_srvs/srv/SetBool '{data: false}'
+```
+
+Then Ctrl+C the example so TeleopJoint releases. Do not run Policy / marker
+teleop against the same arm while a leader is enabled.
+
+Left yaml defaults `can0` and publishes follower joint names `left_joint*`;
+right yaml defaults `can1` and `right_joint*`. Follower SocketCAN on the RT
+host (`piper0` / `piper1`) is a different pair of adapters.
+
 ## Leader model
 
 The launch file expands
@@ -61,7 +114,8 @@ The left-side validation configs form this exact path:
 
 `can0 leader -> /action_sources/piper_leader_left/arm/joint_reference (+ end_effector/joint_reference) -> em_left -> left_arm_jspc + left_gripper_fwd -> fake left follower`
 
-Use `config/piper_leader_left.yaml` for the leader and
+Use `config/piper_leader_left.yaml` and `config/piper_leader_right.yaml` for
+the two leaders and
 `piper_manipulation_controller_bringup/config/leader_fake_left.yaml` for the
 follower. The leader config publishes the follower's prefixed joint names; the
 leader gravity model itself remains the independent, unprefixed

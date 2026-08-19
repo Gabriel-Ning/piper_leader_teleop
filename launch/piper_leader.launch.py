@@ -16,6 +16,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description() -> LaunchDescription:
     share = Path(get_package_share_directory("piper_leader_teleop"))
     config = LaunchConfiguration("config")
+    node_name = LaunchConfiguration("node_name")
     leader_model_xacro = LaunchConfiguration("leader_model_xacro")
     leader_robot_description = Command(
         [
@@ -28,6 +29,11 @@ def generate_launch_description() -> LaunchDescription:
         [
             DeclareLaunchArgument(
                 "config", default_value=str(share / "config" / "piper_leader.yaml")
+            ),
+            DeclareLaunchArgument(
+                "node_name",
+                default_value="piper_leader",
+                description="Node name; use piper_leader_left / piper_leader_right for dual-arm.",
             ),
             DeclareLaunchArgument(
                 "leader_model_xacro",
@@ -43,7 +49,7 @@ def generate_launch_description() -> LaunchDescription:
             Node(
                 package="piper_leader_teleop",
                 executable="piper_leader_node",
-                name="piper_leader",
+                name=node_name,
                 output="screen",
                 parameters=[
                     config,
