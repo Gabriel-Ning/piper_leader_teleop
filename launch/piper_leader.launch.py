@@ -24,6 +24,8 @@ def _nodes(context, *args, **kwargs):
     gripper_reference_topic = LaunchConfiguration("gripper_reference_topic").perform(context).strip()
     status_topic = LaunchConfiguration("status_topic").perform(context).strip()
     pendant_state_topic = LaunchConfiguration("pendant_state_topic").perform(context).strip()
+    default_mode = LaunchConfiguration("default_mode").perform(context).strip()
+    fallback_mode = LaunchConfiguration("fallback_mode").perform(context).strip()
 
     leader_model_xacro = LaunchConfiguration("leader_model_xacro")
     leader_robot_description = Command(
@@ -43,6 +45,10 @@ def _nodes(context, *args, **kwargs):
             node_params["publish_rate_hz"] = float(publish_rate_hz)
         except ValueError:
             pass
+    if default_mode:
+        node_params["default_mode"] = default_mode
+    if fallback_mode:
+        node_params["fallback_mode"] = fallback_mode
     if joint_names:
         parsed_joints = [j.strip() for j in joint_names.split(",") if j.strip()]
         node_params["joint_names"] = parsed_joints
@@ -125,6 +131,16 @@ def generate_launch_description() -> LaunchDescription:
                 "pendant_state_topic",
                 default_value="",
                 description="Teaching pendant state topic.",
+            ),
+            DeclareLaunchArgument(
+                "default_mode",
+                default_value="shadow",
+                description="Initial startup mode: shadow | passive.",
+            ),
+            DeclareLaunchArgument(
+                "fallback_mode",
+                default_value="shadow",
+                description="Fallback release mode: shadow | passive.",
             ),
             DeclareLaunchArgument(
                 "leader_model_xacro",

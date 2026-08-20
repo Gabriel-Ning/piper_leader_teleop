@@ -96,6 +96,7 @@ public:
     fallback_mode_str_ = declare_parameter<std::string>("fallback_mode", "shadow");
     shadow_velocity_limit_rad_s_ =
         declare_parameter<double>("shadow_velocity_limit_rad_s", 2.0);
+    autostart_ = declare_parameter<bool>("autostart", true);
 
     // Output Teleop Topics
     joint_topic_ = declare_parameter<std::string>(
@@ -154,9 +155,26 @@ public:
         std::chrono::duration_cast<std::chrono::nanoseconds>(period),
         std::bind(&PiperLeaderNode::publishLatest, this));
 
-    RCLCPP_INFO(get_logger(),
-                "Piper leader initialized in %s. Ready but disabled. Call '%s/enable' to activate.",
-                modeToString(mode_), get_fully_qualified_name());
+    if (autostart_) {
+      try {
+        LeaderMode target = modeFromString(default_mode_str_);
+        if (target == LeaderMode::kDisabled) {
+          target = LeaderMode::kShadowTracking;
+        }
+        setModeLocked(target);
+        RCLCPP_INFO(get_logger(), "Piper leader autostarted in %s mode.",
+                    modeToString(mode_));
+      } catch (const std::exception &error) {
+        RCLCPP_WARN(
+            get_logger(),
+            "Piper leader autostart deferred (waiting for ~/enable): %s",
+            error.what());
+      }
+    } else {
+      RCLCPP_INFO(get_logger(),
+                  "Piper leader initialized. Call '%s/enable' to activate.",
+                  get_fully_qualified_name());
+    }
   }
 
   ~PiperLeaderNode() override {
@@ -561,6 +579,7 @@ private:
   LeaderMode fallback_mode_{LeaderMode::kShadowTracking};
   std::string default_mode_str_;
   std::string fallback_mode_str_;
+  bool autostart_{true};
 
   std::unique_ptr<piper::Robot> robot_;
   std::unique_ptr<piper::Model> model_;
