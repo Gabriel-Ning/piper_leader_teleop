@@ -134,13 +134,13 @@ def generate_launch_description() -> LaunchDescription:
             ),
             DeclareLaunchArgument(
                 "default_mode",
-                default_value="shadow",
-                description="Initial startup mode: shadow | passive.",
+                default_value="",
+                description="Optional startup mode override: shadow | passive (empty = use config).",
             ),
             DeclareLaunchArgument(
                 "fallback_mode",
-                default_value="shadow",
-                description="Fallback release mode: shadow | passive.",
+                default_value="",
+                description="Optional fallback release mode override: shadow | passive (empty = use config).",
             ),
             DeclareLaunchArgument(
                 "leader_model_xacro",
