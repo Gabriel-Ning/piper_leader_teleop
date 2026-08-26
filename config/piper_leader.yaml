@@ -6,6 +6,9 @@ piper_leader:
     feedback_timeout_s: 0.1
     mit_kd_effort_damping: 0.0
     restore_pendant_servo_on_stop: false
+    autostart: false
+    default_mode: shadow
+    fallback_mode: shadow
     joint_names: [joint1, joint2, joint3, joint4, joint5, joint6]
     gripper_joint_name: gripper_joint1
     joint_reference_topic: /action_sources/piper_leader/arm/joint_reference

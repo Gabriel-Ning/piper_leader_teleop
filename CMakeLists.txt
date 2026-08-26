@@ -27,6 +27,11 @@ ament_target_dependencies(piper_leader_node
 )
 target_link_libraries(piper_leader_node libpiper::libpiper)
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_launch_contract test/test_launch_contract.py)
+endif()
+
 install(TARGETS piper_leader_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
 

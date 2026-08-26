@@ -13,6 +13,9 @@
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
   <depend>trajectory_msgs</depend>
+
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>python3-pytest</test_depend>
   <depend>libpiper</depend>
   <depend>piper_description</depend>
 

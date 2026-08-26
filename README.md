@@ -37,15 +37,15 @@ RT follower stack must already be up. Then, in order:
 # 1. Admit TeleopJoint and start the relay (keeps JSPC + gripper_fwd active)
 python examples/14_piper_leader_teleop.py --profile piper_bimanual.yaml --side both
 
-# 2. Other terminals: start leaders. Do not enable yet.
+# 2. Other terminals: start leaders disabled. Do not enable yet.
 #    Override can_interface in the yaml if the pendant is not on can0/can1.
 ros2 launch piper_leader_teleop piper_leader.launch.py \
   config:=$(ros2 pkg prefix piper_leader_teleop)/share/piper_leader_teleop/config/piper_leader_left.yaml \
-  node_name:=piper_leader_left
+  node_name:=piper_leader_left autostart:=false
 
 ros2 launch piper_leader_teleop piper_leader.launch.py \
   config:=$(ros2 pkg prefix piper_leader_teleop)/share/piper_leader_teleop/config/piper_leader_right.yaml \
-  node_name:=piper_leader_right
+  node_name:=piper_leader_right autostart:=false
 
 # 3. Gate: status JSON has active=false and no joint_reference traffic.
 ros2 topic echo /teleop/piper_leader_left/status --once
@@ -90,13 +90,25 @@ expanded parameter into a private temporary URDF while the leader is active.
 
 ## Safety and lifecycle
 
-Launching the node is no-motion: it does not open/enable the arm until the
-explicit service call.
+The packaged config sets `autostart: false`. In that disabled state the ROS
+node and follower-state subscription are live, but CAN hardware and control
+loops stay inactive until the explicit service call.
 
 ```bash
 ros2 launch piper_leader_teleop piper_leader.launch.py
 ros2 service call /piper_leader/enable std_srvs/srv/SetBool '{data: true}'
 ```
+
+To initialize immediately in non-preempting shadow mode instead:
+
+```bash
+ros2 launch piper_leader_teleop piper_leader.launch.py \
+  autostart:=true default_mode:=shadow
+```
+
+`autostart` is an optional launch override: an empty value uses the YAML/node
+default, `false` starts disabled, and `true` enters `default_mode`. Shadow and
+passive modes never publish action references; only `active_preempt` does.
 
 Stop before shutting down:
 
